@@ -8,14 +8,16 @@ const Manager = () => {
         username: "",
         password: ""
     })
+    const getPasswords = async() => {
+        let req=await fetch("http://localhost:3000/")
+        let passwords =await req.json();
+        console.log(passwords);
+            setPasswordArray(passwords);
+    }
+    useEffect(()=>{
+        getPasswords();
+    },[])
     const [passwordArray, setPasswordArray] = useState([])
-    useEffect(() => {
-        let passwords = localStorage.getItem("passwords");
-        if (passwords) {
-            setPasswordArray(JSON.parse(passwords));
-        }
-
-    }, [])
 
     const ref = useRef();
     const passwordref = useRef();
@@ -30,9 +32,15 @@ const Manager = () => {
             ref.current.src = "public/icons/eye.png";
         }
     }
-    const savePassword = () => {
+    const savePassword =async () => {
         if(form.site.length>3 && form.username.length>3 && form.password.length>3){
-
+            await fetch("http://localhost:3000/",{
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({id:form.id})
+        })
             toast('Password saved ', {
                 position: "top-right",
                 autoClose: 3000,
@@ -45,7 +53,14 @@ const Manager = () => {
             transition: Bounce,
         });
         setPasswordArray([...passwordArray, { ...form, id: uuidv4() }]);
-        localStorage.setItem("passwords", JSON.stringify([...passwordArray, { ...form, id: uuidv4() }]))
+        await fetch("http://localhost:3000/",{
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ ...form, id: uuidv4() })
+        })
+        // localStorage.setItem("passwords", JSON.stringify([...passwordArray, { ...form, id: uuidv4() }]))
     }
     else{
         alert("Greater than 3 characters are allowed for each field");
@@ -56,7 +71,7 @@ const Manager = () => {
         password: "",
     })
     }
-    const deletePassword = (id) => {
+    const deletePassword =async (id) => {
 
 
         let c = confirm("Are you sure you want to delete this password?");
@@ -73,7 +88,13 @@ const Manager = () => {
                 transition: Bounce,
             });
             setPasswordArray(passwordArray.filter((item) => item.id !== id));
-            localStorage.setItem("passwords", JSON.stringify(passwordArray.filter((item) => item.id !== id)))
+            let res=await fetch("http://localhost:3000/",{
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({id})
+        })
         }
 
     }
@@ -81,11 +102,7 @@ const Manager = () => {
         const passwordToEdit = passwordArray.find(item => item.id === id);
         setPasswordArray(passwordArray.filter((item) => item.id !== id));
         // localStorage.setItem("passwords", JSON.stringify(passwordArray.filter((item) => item.id !== id)))
-        setform({
-            site: passwordToEdit.site,
-            username: passwordToEdit.username,
-            password: passwordToEdit.password
-        })
+        setform({...passwordArray.filter(i=>i.id===id)[0],id:id})
         console.log("editing password with id:", id);
     }
     const handleChange = (e) => {
@@ -227,7 +244,7 @@ const Manager = () => {
 
 
                                                         <span>
-                                                            {item.password}
+                                                            {"*".repeat(item.password.length)}
 
                                                         </span>
                                                         <div className='lordiconcopy size-7 cursor-pointer' onClick={() => { copyText(item.password) }}>
